@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Thu Mar  4 13:44:08 2021
 
@@ -372,4 +371,3 @@ class ResFPN_Classifier():
             ensemble_class_ids[i] = class_id
             
         return ensemble_class_ids
-
