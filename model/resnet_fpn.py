@@ -22,7 +22,8 @@ class ResFPN_Classifier():
     """
     
     def __init__(self, image_shape, num_classes, num_filters=256, 
-                 architecture='resnet50', augmentation=True):
+                 architecture='resnet50', augmentation=True, 
+                 checkpoint_path=None, resnet_weights_path=None):
         """
         Initialization.
 
@@ -40,6 +41,12 @@ class ResFPN_Classifier():
             Whether to use keras augmentation, i.e., RandomFlip, RandomRotation,
             RandomZoom; see tf.keras.layers.experimental.preprocessing for 
             details. The default is True.
+        checkpoint_path : string, optional
+            The path to the saved TF keras model checkpoint. The default is None.
+        resnet_weights_path : string, optional
+            The path to the pretrained ResNet weights in h5 format. Note that
+            it has to match with the architecture of building model. The default 
+            is None.
 
         Returns
         -------
@@ -52,6 +59,11 @@ class ResFPN_Classifier():
         self.augmentation = augmentation
         self.model = self.build(image_shape, num_classes, num_filters, 
                                 architecture, augmentation)
+        
+        if checkpoint_path is not None:
+            self.model.load_weights(checkpoint_path, by_name=False)
+        if resnet_weights_path is not None:
+            self.model.load_weights(resnet_weights_path, by_name=True)
         
     
     def build(self, image_shape, num_classes, num_filters, architecture,
@@ -296,9 +308,18 @@ class ResFPN_Classifier():
             The accuracy of the model selected from top_idxes classifiers.
 
         """
+        # fix the order of elements in val_dataset
+        val_dataset = val_dataset.cache()
+        
         evals = np.array(self.model.evaluate(val_dataset))
         top_idxes = np.argsort(evals[7:])[::-1][:top]
         self.top_idxes = top_idxes
+        
+        # display top classifiers names
+        classifier_names = ['resnet']
+        for i in np.arange(5):
+            classifier_names += ['res_fpn_%d' % (i+2)]
+        print('Top classifiers:', [classifier_names[i] for i in top_idxes])
         
         # the ensemble model outputs, len(logits) = top
         logits = self.model.predict(val_dataset)
@@ -322,20 +343,22 @@ class ResFPN_Classifier():
             
         # accuracy
         ensemble_accs = []
-        for x_batch, y_batch in val_dataset.take(1):
+        for _, y_batch in val_dataset.take(1):
             batch_size = y_batch.shape[0]
         num_batches = int(np.ceil(num_val / batch_size))
-        for i, (_, y_batch) in zip(
+        for i, (_, y_true_batch) in zip(
                 range(num_batches), val_dataset.as_numpy_iterator()):
-            y_gt_batch = ensemble_class_ids[i*batch_size:batch_size+i*batch_size]
-            acc = np.sum(y_gt_batch == y_batch) / len(y_batch)
+            y_pred_batch = ensemble_class_ids[
+                i*batch_size : batch_size + i*batch_size]
+            acc = np.sum(y_true_batch == y_pred_batch) / len(y_true_batch)
             ensemble_accs.append(acc)
         ensemble_acc = sum(ensemble_accs) / len(ensemble_accs)
+        print('Validation accuracy:', ensemble_acc)
         
         return top_idxes, ensemble_acc
     
     
-    def predict(self, test_dataset):
+    def predict(self, test_dataset, class_names, display_metrics=True):
         """
         Predicts the given dataset.
 
@@ -343,13 +366,24 @@ class ResFPN_Classifier():
         ----------
         test_dataset : tf data
             The data needed to be predicted.
+        class_names : list
+            The class names in the test_dataset.
+        display_metrics : boolean, optional
+            Wether display the calculated metrics. The default is True.
 
         Returns
         -------
         ensemble_class_ids : 
             The predicted class IDs using the ensemble model from select_top().
+        metrics : tuple
+            The ensembled classifier performance over batches, including 
+            accuracy, precision, recall and F1-score, where last three metrics
+            are dictionaries with different class IDs as keys.
 
         """
+        # fix the order of elements in val_dataset
+        test_dataset = test_dataset.cache()
+        
         # the ensemble model outputs, len(logits) = top
         logits = self.model.predict(test_dataset)
         logits = [logits[i] for i in self.top_idxes]
@@ -370,4 +404,84 @@ class ResFPN_Classifier():
             class_id = unique_class_ids[idx]
             ensemble_class_ids[i] = class_id
             
-        return ensemble_class_ids
+        def compute_metrics(positive_class_id, y_true, y_pred):
+            """
+            Given a positive class, computes precision, recall and F1-score.
+
+            Parameters
+            ----------
+            positive_class_id : integer
+                A positive class ID.
+            y_true : numpy array
+                Ground-truth class IDs.
+            y_pred : numpy array
+                Predicted class IDs.
+
+            Returns
+            -------
+            metrics : tuple
+                Includes precision, recall and F1-score.
+
+            """
+            tp, fp, fn, tn = 0, 0, 0, 0
+            for idx in range(len(y_pred)):
+                if y_pred[idx] == positive_class_id and \
+                    y_pred[idx] == y_true[idx]:
+                        tp += 1
+                elif y_pred[idx] == positive_class_id and \
+                    y_pred[idx] != y_true[idx]:
+                        fp += 1
+                elif y_pred[idx] != positive_class_id and \
+                    y_pred[idx] != y_true[idx]:
+                        fn += 1
+                elif y_pred[idx] != positive_class_id and \
+                    y_pred[idx] == y_true[idx]:
+                        tn += 1
+            precision = tp / (tp + fp + 1e-5)
+            recall = tp / (tp + fn + 1e-5)
+            f1_score = 2 * precision * recall / (precision + recall + 1e-5)
+            metrics = (precision, recall, f1_score)
+            return metrics
+        
+        # compute metrics
+        accs, precs, recalls, f1s = [], {}, {}, {}
+        for _, y_batch in test_dataset.take(1):
+            batch_size = y_batch.shape[0]
+        num_batches = int(np.ceil(num_test / batch_size))
+        for i, (_, y_true_batch) in zip(
+                range(num_batches), test_dataset.as_numpy_iterator()):
+            y_pred_batch = ensemble_class_ids[
+                i*batch_size : batch_size + i*batch_size]
+            acc_batch = np.sum(y_true_batch == y_pred_batch) / len(y_true_batch)
+            accs.append(acc_batch)
+            # for each class, compute precision, recall and F1-score
+            for class_id in range(len(class_names)):
+                prec_batch, recall_batch, f1_batch = compute_metrics(
+                    class_id, y_true_batch, y_pred_batch)
+                if class_names[class_id] not in precs.keys():
+                    precs[class_names[class_id]] = []
+                precs[class_names[class_id]].append(prec_batch)
+                if class_names[class_id] not in recalls.keys():
+                    recalls[class_names[class_id]] = []
+                recalls[class_names[class_id]].append(recall_batch)
+                if class_names[class_id] not in f1s.keys():
+                    f1s[class_names[class_id]] = []
+                f1s[class_names[class_id]].append(f1_batch)
+        metrics = (accs, precs, recalls, f1s)
+        
+        # display metrics
+        print('Test accuracy: %.2f\n' % (np.mean(np.array(accs))))
+        precs_class, recalls_class, f1s_class = [], [], []
+        for name in class_names:
+            precs_class.append(np.mean(np.array(precs[name])))
+            recalls_class.append(np.mean(np.array(recalls[name]))) 
+            f1s_class.append(np.mean(np.array(f1s[name])))
+            print('%s:' % (name))
+            print('  precision %.2f, recall %.2f, F1-score %.2f' % (
+                precs_class[-1], recalls_class[-1], f1s_class[-1])) 
+        print('\nAverage:')
+        print('  precision %.2f, recall %.2f, F1-score %.2f' % (
+            np.mean(precs_class), np.mean(recalls_class), np.mean(f1s_class)
+            ))
+            
+        return ensemble_class_ids, metrics
