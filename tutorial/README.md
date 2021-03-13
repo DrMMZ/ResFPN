@@ -1,6 +1,6 @@
 **[Flower Photos Classification](https://github.com/DrMMZ/ResFPN/blob/main/tutorial/flower_photos.ipynb)**
 
-This jupyter notebook uses the [TF flowers dataset](https://www.tensorflow.org/datasets/catalog/tf_flowers) demonstrates the use of [ResFPN](https://github.com/DrMMZ/ResFPN/tree/main/model). 
+This jupyter notebook uses the [TF flowers dataset](https://www.tensorflow.org/datasets/catalog/tf_flowers) and demonstrates the use of [ResFPN](https://github.com/DrMMZ/ResFPN/tree/main/model). 
 
 ----
 
