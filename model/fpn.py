@@ -44,8 +44,9 @@ def backbone_fpn(resnet_stages, num_filters, P6=True):
         tf.keras.layers.Conv2D(num_filters, (1,1), name='fpn_c2p2')(C2)])
     
     for p in [P2, P3, P4, P5]:
-        assert p.shape[1] > 3 and p.shape[2] > 3, \
-            'Image shape is too small to have FPN.'
+        if p.shape[1]:
+            assert p.shape[1] >= 2 and p.shape[2] >= 2, \
+                'Image shape is too small to have FPN.'
     
     # 5 stages for each anchor scale in RPN from the original paper
     P2 = tf.keras.layers.Conv2D(
