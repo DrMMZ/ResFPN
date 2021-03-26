@@ -8,3 +8,5 @@ This jupyter notebook uses the [TF flowers dataset](https://www.tensorflow.org/d
 
 The [COVIDx dataset](https://github.com/lindawangg/COVID-Net) is used in this jupyter notebook. The goal is to classify
 COVID-19 in chest X-ray images. The notebook explores the dataset, and goes through preprocessing, training, visualization, evaluation and transfer learning by loading pretrained ResNet weights.
+
+With the [pretrained resenet ImageNet weights](https://github.com/fchollet/deep-learning-models/releases/download/v0.1/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5) and 5 epochs training (no augmentation, subsample 6 COVID-19 images every epoch from a batch size of 32), it can achieve 0.71 F1-score averaged over classes on the test set (one with 100 COVID-19 images).
