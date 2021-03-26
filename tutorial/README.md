@@ -1,6 +1,6 @@
 **[Flower Photos Classification](https://github.com/DrMMZ/ResFPN/blob/main/tutorial/flower_photos.ipynb)**
 
-This jupyter notebook uses the [TF flowers dataset](https://www.tensorflow.org/datasets/catalog/tf_flowers) and demonstrates the use of [ResFPN](https://github.com/DrMMZ/ResFPN/tree/main/model). 
+This jupyter notebook uses the [TF flowers dataset](https://www.tensorflow.org/datasets/catalog/tf_flowers) and demonstrates the use of [ResFPN](https://github.com/DrMMZ/ResFPN/tree/main/model). With the [pretrained resenet ImageNet weights](https://github.com/fchollet/deep-learning-models/releases/download/v0.1/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5) and 5 epochs training, it can achieve 0.92 (+-2%) accuracy or 0.82 (+-3%) F1-score averaged over classes on 10% images.
 
 ----
 
