@@ -154,33 +154,33 @@ def backbone_resnet(input_image, architecture, stage5=False, train_bn=True):
     
     # stage 2
     x = conv_block(
-        x, [64,64,256], stage=2, block='A', strides=(1,1), train_bn=train_bn)
-    x = identity_block(x, [64,64,256], stage=2, block='B', train_bn=train_bn)
+        x, [64,64,256], stage=2, block='a', strides=(1,1), train_bn=train_bn)
+    x = identity_block(x, [64,64,256], stage=2, block='b', train_bn=train_bn)
     C2 = x = identity_block(
-        x, [64,64,256], stage=2, block='C', train_bn=train_bn)
+        x, [64,64,256], stage=2, block='c', train_bn=train_bn)
     
     # stage 3
-    x = conv_block(x, [128,128,512], stage=3, block='A', train_bn=train_bn)
-    x = identity_block(x, [128,128,512], stage=3, block='B', train_bn=train_bn)
-    x = identity_block(x, [128,128,512], stage=3, block='C', train_bn=train_bn)
+    x = conv_block(x, [128,128,512], stage=3, block='a', train_bn=train_bn)
+    x = identity_block(x, [128,128,512], stage=3, block='b', train_bn=train_bn)
+    x = identity_block(x, [128,128,512], stage=3, block='c', train_bn=train_bn)
     C3 = x = identity_block(
-        x, [128,128,512], stage=3, block='D', train_bn=train_bn)
+        x, [128,128,512], stage=3, block='d', train_bn=train_bn)
     
     # stage 4
-    x = conv_block(x, [256,256,1024], stage=4, block='A', train_bn=train_bn)
+    x = conv_block(x, [256,256,1024], stage=4, block='a', train_bn=train_bn)
     num_blocks = {'resnet50':5, 'resnet101':22}[architecture]
     for i in range(num_blocks):
         x = identity_block(
-            x, [256,256,1024], stage=4, block=chr(66+i), train_bn=train_bn)
+            x, [256,256,1024], stage=4, block=chr(98+i), train_bn=train_bn)
     C4 = x
     
     # stage 5
     if stage5:
-        x = conv_block(x, [512,512,2048], stage=5, block='A', train_bn=train_bn)
+        x = conv_block(x, [512,512,2048], stage=5, block='a', train_bn=train_bn)
         x = identity_block(
-            x, [512,512,2048], stage=5, block='B', train_bn=train_bn)
+            x, [512,512,2048], stage=5, block='b', train_bn=train_bn)
         C5 = x = identity_block(
-            x, [512,512,2048], stage=5, block='C', train_bn=train_bn)
+            x, [512,512,2048], stage=5, block='c', train_bn=train_bn)
     else:
         C5 = None
         
