@@ -8,3 +8,6 @@ The repository includes:
 
 ### Requirements
 `python 3.7.9`, `tensorflow 2.3.1`, `matplotlib 3.3.4` and `numpy 1.19.2`
+
+### Updates
+* 05/10/2021: Add [Focal Loss](https://arxiv.org/abs/1708.02002) implementation and some corresponding changes in ResFPN are made, see the [model](https://github.com/DrMMZ/ResFPN/tree/main/model) folder for details. Roughly speaking, focal loss can address class imbalance problem by removing easy examples during training. We present experimental results on the [COVIDx]() dataset, see the [tutorial](https://github.com/DrMMZ/ResFPN/tree/main/tutorial) folder.
