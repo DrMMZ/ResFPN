@@ -1,13 +1,12 @@
 """
 Created on Fri Nov 27 14:37:35 2020
 
-@author: Ming Ming Zhang
+@author: Ming Ming Zhang, mmzhangist@gmail.com
 
 Feature Pyramid Networks (FPN)
 """
 
 import tensorflow as tf
-import numpy as np
 
 
 def backbone_fpn(resnet_stages, num_filters, P6=True):
@@ -48,7 +47,7 @@ def backbone_fpn(resnet_stages, num_filters, P6=True):
             assert p.shape[1] >= 2 and p.shape[2] >= 2, \
                 'Image shape is too small to have FPN.'
     
-    # 5 stages for each anchor scale in RPN from the original paper
+    # 5 stages
     P2 = tf.keras.layers.Conv2D(
         num_filters, (3,3), padding='same', name='fpn_p2')(P2)
     P3 = tf.keras.layers.Conv2D(

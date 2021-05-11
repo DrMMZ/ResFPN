@@ -1,13 +1,13 @@
 """
 Created on Thu Mar  4 13:44:08 2021
 
-@author: Ming Ming Zhang
+@author: Ming Ming Zhang, mmzhangist@gmail.com
 
 Ensemble Model: ResNet + FPN
 """
 
 
-import resnet, fpn
+import resnet, fpn, focal_loss
 
 import tensorflow as tf
 import numpy as np
@@ -21,16 +21,23 @@ class ResFPN_Classifier():
     
     """
     
-    def __init__(self, image_shape, num_classes, num_filters=256, 
-                 architecture='resnet50', augmentation=True, 
-                 checkpoint_path=None, resnet_weights_path=None):
+    def __init__(
+            self, 
+            image_shape, 
+            num_classes, 
+            num_filters=256,
+            architecture='resnet50', 
+            augmentation=True, 
+            checkpoint_path=None, 
+            resnet_weights_path=None
+            ):
         """
-        Initialization.
+        A constructor.
 
         Parameters
         ----------
         image_shape : tuple
-            [height, width, 3] where 3 is RBG channels, the image shape.
+            The image shape, [height, width, 3] where 3 is RBG channels.
         num_classes : integer
             The number of classes in the given dataset.
         num_filters : integer, optional
@@ -53,23 +60,33 @@ class ResFPN_Classifier():
         None.
 
         """
-        self.image_shape = image_shape
         self.num_classes = num_classes
-        self.num_filters = num_filters
-        self.augmentation = augmentation
-        self.model = self.build(image_shape, num_classes, num_filters, 
-                                architecture, augmentation)
+        
+        self.model = self.build(
+            image_shape, 
+            num_classes, 
+            num_filters, 
+            architecture, 
+            augmentation
+            )
         
         if checkpoint_path is not None:
             self.model.load_weights(checkpoint_path, by_name=False)
+            
         if resnet_weights_path is not None:
             self.model.load_weights(resnet_weights_path, by_name=True)
         
     
-    def build(self, image_shape, num_classes, num_filters, architecture,
-              augmentation):
+    def build(
+            self, 
+            image_shape, 
+            num_classes, 
+            num_filters, 
+            architecture,
+            augmentation
+            ):
         """
-        Builds the classifier.
+        Builds the ResFPN classifier.
 
         Parameters
         ----------
@@ -77,8 +94,8 @@ class ResFPN_Classifier():
 
         Returns
         -------
-        model : keras model
-            The ensemble classifier from ResNet and FPN.
+        model : tf keras model
+            An ensemble classifier from ResNet and FPN.
 
         """
         inputs = tf.keras.Input(shape=image_shape, name='input_images')
@@ -110,8 +127,7 @@ class ResFPN_Classifier():
         
         # fpn
         resnet_stages = [C1, C2, C3, C4, C5]
-        P2, P3, P4, P5, P6 = fpn.backbone_fpn(
-            resnet_stages, num_filters, P6=False)
+        P2, P3, P4, P5, P6 = fpn.backbone_fpn(resnet_stages, num_filters, P6=False)
         fmaps = [P2, P3, P4, P5]
         
         # fpn heads
@@ -123,26 +139,23 @@ class ResFPN_Classifier():
                 num_classes, name='dense_fpn_%s' % str(i+2))(x)
             outputs.append(logits_fpn)
             
-        
-            
         model = tf.keras.Model(inputs, outputs, name=architecture + '_fpn')
-        
         return model
     
     
-    def compile(self, lr, momentum, l2):
+    def compile(self, params={}, loss_type='ce'):
         """
-        Adds a SGD optimizer, L2-regularization and cross-entropy loss and gets
-        ready for training.
+        Adds a SGD optimizer, L2-regularization and cross-entropy/focal loss.
 
         Parameters
         ----------
-        lr : float
-            A learning rate for the optimizer.
-        momentum : float
-            A momentum scalar for the optimizer. 
-        l2 : float
-            A scalar for the L2-regularization. 
+        params : dictionary, optional
+            Training parameters including the learning rate lr, momentum, 
+            L2-regularization l2, epochs, alpha and gamma parameters when using 
+            focal loss. The default is {}.
+        loss_type : string, optional
+            Whether to use cross-entropy 'ce' or focal loss 'focal'. The default 
+            is 'ce'.
 
         Returns
         -------
@@ -150,13 +163,26 @@ class ResFPN_Classifier():
 
         """
         # optimizer
-        optimizer = tf.keras.optimizers.SGD(
-            lr=lr, momentum=momentum, clipnorm=5.0)
+        lr = params.get('lr', 0.001)
+        momentum = params.get('momentum', 0.9)
+        l2 = params.get('l2', 0.01)
+        optimizer = tf.keras.optimizers.SGD(lr, momentum, clipnorm=5.0)
         
         # losses
+        assert loss_type in ['ce', 'focal']
         losses = []
         for i in range(len(self.model.outputs)):
-            loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+            if loss_type == 'ce':
+                loss = tf.keras.losses.SparseCategoricalCrossentropy(
+                    from_logits=True)
+            else:
+                alpha = params.get('alpha', [1/self.num_classes]*self.num_classes)
+                gamma = params.get('gamma', 1.0)
+                loss = focal_loss.FocalLoss(
+                    alpha=alpha,
+                    gamma=gamma,
+                    from_logits=True
+                    )
             losses.append(loss)
     
         # l2-regularization
@@ -165,35 +191,37 @@ class ResFPN_Classifier():
             reg_losses.append(
                 tf.keras.regularizers.L2(l2)(w) / tf.cast(tf.size(w), tf.float32))
         self.model.add_loss(lambda: tf.math.add_n(reg_losses))
-        
-              
+            
         self.model.compile(
             optimizer=optimizer,
             loss=losses,
-            metrics=['accuracy'])
+            metrics=['accuracy']
+            )
         
         
-    def train(self, train_dataset, val_dataset, epochs, lr, momentum=0.9, 
-              l2=0.01, save_weights=False):
+    def train(
+            self, 
+            train_dataset, 
+            val_dataset, 
+            params={}, 
+            loss_type='ce', 
+            save_weights=False
+            ):
         """
         Trains the model.
 
         Parameters
         ----------
-        train_dataset : tf data
+        train_dataset : tf dataset
             A training dataset.
-        val_dataset : tf data
+        val_dataset : tf dataset
             A validation dataset.
-        lr : float
-            A learning rate for the optimizer.
-        momentum : float, optional
-            A momentum scalar for the optimizer. The default is 0.9.
-        l2 : float, optional
-            A scalar for the L2-regularization. The default is 0.01.
-        epochs : integer
-            The number of training epochs.
+        params : dictionary, optional
+            Same as above compile(). The default is {}.
+        loss_type : string, optional
+            Same as above compile(). The default is 'ce'.
         save_weights : boolean, optional
-            Wether to save the trained weights in the working directory. The 
+            Whether to save the trained weights in the working directory. The 
             default is False.
 
         Returns
@@ -201,7 +229,7 @@ class ResFPN_Classifier():
         None.
 
         """
-        self.compile(lr, momentum, l2)
+        self.compile(params, loss_type)
         
         callbacks = []
         if save_weights:
@@ -209,14 +237,20 @@ class ResFPN_Classifier():
             current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             checkpoint_dir = os.path.join(
                 ROOT_DIR, 'checkpoints', current_time)
-            self.checkpoint_path = os.path.join(checkpoint_dir, 'checkpoint')
+            checkpoint_path = os.path.join(checkpoint_dir, 'checkpoint')
             cp_callback = tf.keras.callbacks.ModelCheckpoint(
-                self.checkpoint_path, save_weights_only=True)
+                checkpoint_path, 
+                save_weights_only=True
+                )
             callbacks.append(cp_callback)
-            
+        
+        epochs = params.get('epochs', 1)
         output = self.model.fit(
-            train_dataset, validation_data=val_dataset, epochs=epochs, 
-            callbacks=callbacks)
+            train_dataset, 
+            validation_data=val_dataset, 
+            epochs=epochs, 
+            callbacks=callbacks
+            )
         self.history = output.history
         
         
@@ -290,14 +324,14 @@ class ResFPN_Classifier():
             
     def select_top(self, val_dataset, top):
         """
-        Selects the top classifiers based on the accuracies.
+        Selects the top classifiers based on the losses.
 
         Parameters
         ----------
-        val_dataset : tf data
+        val_dataset : tf dataset
             A validation dataset.
         top : integer
-            The total number in [1, 6] of classifiers to select.
+            The total number in [1,5] of classifiers to select.
 
         Returns
         -------
@@ -312,14 +346,14 @@ class ResFPN_Classifier():
         val_dataset = val_dataset.cache()
         
         evals = np.array(self.model.evaluate(val_dataset))
-        top_idxes = np.argsort(evals[7:])[::-1][:top]
-        self.top_idxes = top_idxes
+        # top_idxes = np.argsort(evals[6:])[::-1][:top]
+        top_idxes = np.argsort(evals[1:6])[:top]
         
         # display top classifiers names
         classifier_names = ['resnet']
         for i in np.arange(5):
             classifier_names += ['res_fpn_%d' % (i+2)]
-        print('Top classifiers:', [classifier_names[i] for i in top_idxes])
+        print('\nTop classifiers:', [classifier_names[i] for i in top_idxes])
         
         # the ensemble model outputs, len(logits) = top
         logits = self.model.predict(val_dataset)
@@ -336,7 +370,9 @@ class ResFPN_Classifier():
         ensemble_class_ids = np.zeros(shape=(num_val), dtype=np.int32)
         for i in range(num_val):
             unique_class_ids, counts = np.unique(
-                class_ids[i], return_counts=True)
+                class_ids[i], 
+                return_counts=True
+                )
             idx = np.argmax(counts)
             class_id = unique_class_ids[idx]
             ensemble_class_ids[i] = class_id
@@ -353,32 +389,42 @@ class ResFPN_Classifier():
             acc = np.sum(y_true_batch == y_pred_batch) / len(y_true_batch)
             ensemble_accs.append(acc)
         ensemble_acc = sum(ensemble_accs) / len(ensemble_accs)
-        print('Validation accuracy:', ensemble_acc)
+        print('\nValidation accuracy:', ensemble_acc)
         
         return top_idxes, ensemble_acc
     
     
-    def predict(self, test_dataset, class_names, display_metrics=True):
+    def predict(
+            self, 
+            test_dataset, 
+            class_names, 
+            display_metrics=True, 
+            top_idxes=[0]
+            ):
         """
         Predicts the given dataset.
 
         Parameters
         ----------
-        test_dataset : tf data
+        test_dataset : tf dataset
             The data needed to be predicted.
         class_names : list
             The class names in the test_dataset.
         display_metrics : boolean, optional
-            Wether display the calculated metrics. The default is True.
+            Whether display the calculated metrics. The default is True.
+        top_idxes : list, optional
+            An output from select_top(). The default is resnet's prediction.
 
         Returns
         -------
-        ensemble_class_ids : 
+        ensemble_class_ids : numpy array
             The predicted class IDs using the ensemble model from select_top().
         metrics : tuple
             The ensembled classifier performance over batches, including 
             accuracy, precision, recall and F1-score, where last three metrics
             are dictionaries with different class IDs as keys.
+        F1-score : float
+            Averaged F1-score.
 
         """
         # fix the order of elements in val_dataset
@@ -386,7 +432,7 @@ class ResFPN_Classifier():
         
         # the ensemble model outputs, len(logits) = top
         logits = self.model.predict(test_dataset)
-        logits = [logits[i] for i in self.top_idxes]
+        logits = [logits[i] for i in top_idxes]
         
         # predicted class IDs, resulting in [num_test, top]
         class_ids = []
@@ -399,7 +445,9 @@ class ResFPN_Classifier():
         ensemble_class_ids = np.zeros(shape=(num_test), dtype=np.int32)
         for i in range(num_test):
             unique_class_ids, counts = np.unique(
-                class_ids[i], return_counts=True)
+                class_ids[i], 
+                return_counts=True
+                )
             idx = np.argmax(counts)
             class_id = unique_class_ids[idx]
             ensemble_class_ids[i] = class_id
@@ -470,7 +518,7 @@ class ResFPN_Classifier():
         metrics = (accs, precs, recalls, f1s)
         
         # display metrics
-        print('Test accuracy: %.2f\n' % (np.mean(np.array(accs))))
+        print('\nTest accuracy: %.2f\n' % (np.mean(np.array(accs))))
         precs_class, recalls_class, f1s_class = [], [], []
         for name in class_names:
             precs_class.append(np.mean(np.array(precs[name])))
@@ -484,4 +532,4 @@ class ResFPN_Classifier():
             np.mean(precs_class), np.mean(recalls_class), np.mean(f1s_class)
             ))
             
-        return ensemble_class_ids, metrics
+        return ensemble_class_ids, metrics, np.mean(f1s_class)
