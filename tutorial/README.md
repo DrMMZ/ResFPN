@@ -12,6 +12,6 @@ This jupyter notebook uses the [TF flowers dataset](https://www.tensorflow.org/d
 **[COVID-19 Classification](https://github.com/DrMMZ/ResFPN/blob/main/tutorial/COVIDx.ipynb)**
 
 The [COVIDx dataset](https://github.com/lindawangg/COVID-Net) is used in this jupyter notebook. The goal is to classify
-COVID-19 in chest X-ray images. The notebook presents experimental results on the cross-entropy loss and [focal loss](https://github.com/DrMMZ/ResFPN/tree/main/model). For preprocessing the dataset and tuning parameters in focal loss, see [covidx]() file.
+COVID-19 in chest X-ray images. The notebook presents experimental results on the cross-entropy loss and [focal loss](https://github.com/DrMMZ/ResFPN/tree/main/model). For preprocessing the dataset and tuning parameters in focal loss, see [covidx](https://github.com/DrMMZ/ResFPN/blob/main/tutorial/covidx.py) file.
 
 With the focal loss and [pretrained resenet ImageNet weights](https://github.com/fchollet/deep-learning-models/releases/download/v0.1/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5), 5 epochs SGD training on 256x256 images a batch size of 32, it can achieve 0.77 (+-1%) F1-score averaged over classes on the test set (one with 100 COVID-19 images). On the contrast, cross-entropy loss has 0.72 (+-2%) F1-score averaged over classes.
