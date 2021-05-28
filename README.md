@@ -4,7 +4,7 @@ This is an implementation of [*ResFPN*](https://github.com/DrMMZ/ResFPN/tree/mai
 
 The repository includes:
 * source code of ResFPN built on ResNet50/101 and FPN;
-* source code of [Focal Loss](https://github.com/DrMMZ/ResFPN/blob/main/model/focal_loss.py) (); and
+* source code of [Focal Loss](https://github.com/DrMMZ/ResFPN/blob/main/model/focal_loss.py) (multi-class, with class balancing parameter); and
 * jupyter notebook demonstration the use of ResFPN in training, evaluation and visualization.
 
 ### Requirements
