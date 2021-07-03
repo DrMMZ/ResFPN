@@ -1,11 +1,11 @@
 # ResFPN
 
-This is an implementation of [*ResFPN*](https://github.com/DrMMZ/ResFPN/tree/main/model) on Python 3 and TensorFlow 2. The model classifies images by ensembling predictions from [Residual Network](https://arxiv.org/abs/1512.03385) (ResNet) and [Feature Pyramid Network](https://arxiv.org/abs/1612.03144) (FPN). 
+This is an implementation of [*ResFPN*](https://github.com/DrMMZ/ResFPN/tree/main/model) on Python 3 and TensorFlow 2. The model classifies images by ensembling predictions from [Residual Network](https://arxiv.org/abs/1512.03385) (ResNet) and [Feature Pyramid Network](https://arxiv.org/abs/1612.03144) (FPN), and can be trained by minimizing [focal loss](https://arxiv.org/abs/1708.02002). 
 
 The repository includes:
 * source code of ResFPN built on ResNet50/101 and FPN;
-* source code of [Focal Loss](https://github.com/DrMMZ/ResFPN/blob/main/model/focal_loss.py) (generalize to multi-class, with class balancing parameter); and
-* jupyter notebook demonstration using ResFPN in training, evaluation and visualization on the [tf_flowers](https://www.tensorflow.org/datasets/catalog/tf_flowers) and [COVIDx](https://github.com/lindawangg/COVID-Net) dataset. Below are example classifications on tf_flowers dataset.
+* source code of focal loss (generalize to multi-class, with class balancing parameter); and
+* jupyter notebook demonstration using ResFPN in training, evaluation and visualization on the [tf_flowers](https://www.tensorflow.org/datasets/catalog/tf_flowers) and [COVIDx](https://github.com/lindawangg/COVID-Net) dataset. Below are example classifications on the tf_flowers dataset.
 
 ![tf_flowers](https://raw.githubusercontent.com/DrMMZ/drmmz.github.io/master/images/flower_movie.gif)
 
