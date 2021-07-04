@@ -1,6 +1,4 @@
 """
-Created on Thu Mar  4 13:44:08 2021
-
 @author: Ming Ming Zhang, mmzhangist@gmail.com
 
 Ensemble Model: ResNet + FPN
