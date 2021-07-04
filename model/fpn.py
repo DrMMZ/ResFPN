@@ -1,6 +1,4 @@
 """
-Created on Fri Nov 27 14:37:35 2020
-
 @author: Ming Ming Zhang, mmzhangist@gmail.com
 
 Feature Pyramid Networks (FPN)
