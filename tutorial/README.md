@@ -1,11 +1,12 @@
 #### Updates
+* 07/04/2021: Add a new notebook using the updated ResFPN on Flower dataset.
 * 05/10/2021: Due to a new version of ResFPN, we made corresponding changes in the demonstrations using Flower and COVIDx dataset. Old jupyter notebooks are in the [bin](https://github.com/DrMMZ/ResFPN/tree/main/tutorial/bin) folder.
 
 ----
 
 **[Flower Photos Classification](https://github.com/DrMMZ/ResFPN/blob/main/tutorial/flower_photos.ipynb)**
 
-This jupyter notebook uses the [TF flowers dataset](https://www.tensorflow.org/datasets/catalog/tf_flowers) and demonstrates the use of [ResFPN](https://github.com/DrMMZ/ResFPN/tree/main/model). With the [pretrained resenet ImageNet weights](https://github.com/fchollet/deep-learning-models/releases/download/v0.1/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5), 5 epochs SGD training on augmented 256x256 images a batch size of 32, it can achieve 0.92 (+-2%) accuracy or 0.83 (+-3%) F1-score averaged over classes on 10% images.
+This jupyter notebook uses the [TF flowers dataset](https://www.tensorflow.org/datasets/catalog/tf_flowers) and demonstrates the use of [ResFPN](https://github.com/DrMMZ/ResFPN/tree/main/model). With the [pretrained resenet ImageNet weights](https://github.com/fchollet/deep-learning-models/releases/download/v0.1/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5), 5 epochs synchronized SGD over 2 GPUs training on augmented 256x256 images a batch size of 64 (32 images per GPU), it can achieve 0.92 (+-2%) accuracy or 0.83 (+-3%) F1-score averaged over classes on 10% images.
 
 ----
 
