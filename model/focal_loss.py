@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
 """
-Created on Wed May  5 21:28:16 2021
-
 @author: Ming Ming Zhang, mmzhangist@gmail.com
 
 Focal Loss
