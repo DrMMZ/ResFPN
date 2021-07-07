@@ -5,7 +5,7 @@ This is an implementation of [*ResFPN*](https://github.com/DrMMZ/ResFPN/tree/mai
 The repository includes:
 * source code of ResFPN built on ResNet50/101 and FPN;
 * source code of focal loss (generalize to multi-class, with class balancing parameter); and
-* jupyter notebook demonstration using ResFPN in training, evaluation and visualization on the [tf_flowers](https://www.tensorflow.org/datasets/catalog/tf_flowers) and [COVIDx](https://github.com/lindawangg/COVID-Net) dataset. Below are example classifications on the tf_flowers dataset.
+* jupyter notebook demonstration using ResFPN in training, evaluation and visualization on the [tf_flowers](https://www.tensorflow.org/datasets/catalog/tf_flowers) and [COVIDx](https://github.com/lindawangg/COVID-Net) dataset. Below are example classifications on the tf_flowers dataset randomly selected from un-trained images.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/DrMMZ/drmmz.github.io/master/images/flower_movie.gif" width='480' height='360'/>
